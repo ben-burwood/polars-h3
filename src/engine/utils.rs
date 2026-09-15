@@ -151,6 +151,51 @@ pub fn resolve_target_inner_dtype(original_dtype: &DataType) -> PolarsResult<Dat
     Ok(target_inner_dtype)
 }
 
+/// Broadcast length-1 inputs up to the common length for an elementwise call.
+///
+/// Polars may pass a literal/scalar argument as a length-1 `Series`. Without
+/// broadcasting, the `zip`-based engine functions would truncate an `N x 1`
+/// call to a single row. This mirrors Polars' elementwise broadcasting rules:
+///
+/// - `target` is the single non-1 length among the inputs (or 1 if every
+///   input has length 1).
+/// - length-1 inputs are repeated to `target` (nulls are preserved).
+/// - two differing non-1 lengths return a `ShapeMismatch` error.
+/// - a `target` of 0 naturally yields empty results (empty-frame case).
+pub fn broadcast_inputs(inputs: &[&Series]) -> PolarsResult<Vec<Series>> {
+    let mut target: Option<usize> = None;
+    for s in inputs {
+        let len = s.len();
+        if len != 1 {
+            match target {
+                None => target = Some(len),
+                Some(t) if t != len => {
+                    return Err(polars_err!(
+                        ShapeMismatch:
+                        "H3 elementwise inputs have mismatched lengths: {} vs {}",
+                        t,
+                        len
+                    ));
+                },
+                _ => {},
+            }
+        }
+    }
+
+    let target_len = target.unwrap_or(1);
+    inputs
+        .iter()
+        .map(|s| {
+            if s.len() == target_len {
+                Ok((*s).clone())
+            } else {
+                // s.len() == 1 here: broadcast the single value to target_len.
+                Ok(s.new_from_index(0, target_len))
+            }
+        })
+        .collect()
+}
+
 /// Return an error if `series` has any nulls.
 pub fn bail_if_null(series: &Series, context: &str) -> PolarsResult<()> {
     if series.null_count() > 0 {

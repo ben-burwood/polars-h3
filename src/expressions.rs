@@ -249,9 +249,8 @@ fn uncompact_cells(inputs: &[Series], kwargs: ResolutionKwargs) -> PolarsResult<
 
 #[polars_expr(output_type=Int32)]
 fn grid_distance(inputs: &[Series]) -> PolarsResult<Series> {
-    let origin_series = &inputs[0];
-    let destination_series = &inputs[1];
-    crate::engine::traversal::grid_distance(origin_series, destination_series)
+    let b = crate::engine::utils::broadcast_inputs(&[&inputs[0], &inputs[1]])?;
+    crate::engine::traversal::grid_distance(&b[0], &b[1])
 }
 
 #[polars_expr(output_type_func = dynamic_list_output_dtype)]
@@ -263,7 +262,8 @@ fn grid_ring(inputs: &[Series]) -> PolarsResult<Series> {
             inputs.len()
         );
     }
-    crate::engine::traversal::grid_ring(inputs)
+    let b = crate::engine::utils::broadcast_inputs(&[&inputs[0], &inputs[1]])?;
+    crate::engine::traversal::grid_ring(&b)
 }
 
 #[polars_expr(output_type_func=dynamic_list_output_dtype)]
@@ -275,14 +275,14 @@ fn grid_disk(inputs: &[Series]) -> PolarsResult<Series> {
             inputs.len()
         );
     }
-    crate::engine::traversal::grid_disk(inputs)
+    let b = crate::engine::utils::broadcast_inputs(&[&inputs[0], &inputs[1]])?;
+    crate::engine::traversal::grid_disk(&b)
 }
 
 #[polars_expr(output_type_func=dynamic_list_output_dtype)]
 fn grid_path_cells(inputs: &[Series]) -> PolarsResult<Series> {
-    let origin_series = &inputs[0];
-    let destination_series = &inputs[1];
-    crate::engine::traversal::grid_path_cells(origin_series, destination_series)
+    let b = crate::engine::utils::broadcast_inputs(&[&inputs[0], &inputs[1]])?;
+    crate::engine::traversal::grid_path_cells(&b[0], &b[1])
 }
 
 fn ij_list_dtype(input_fields: &[Field]) -> PolarsResult<Field> {
@@ -294,17 +294,14 @@ fn ij_list_dtype(input_fields: &[Field]) -> PolarsResult<Field> {
 
 #[polars_expr(output_type_func=ij_list_dtype)]
 fn cell_to_local_ij(inputs: &[Series]) -> PolarsResult<Series> {
-    let cell_series = &inputs[0];
-    let origin_series = &inputs[1];
-    crate::engine::traversal::cell_to_local_ij(cell_series, origin_series)
+    let b = crate::engine::utils::broadcast_inputs(&[&inputs[0], &inputs[1]])?;
+    crate::engine::traversal::cell_to_local_ij(&b[0], &b[1])
 }
 
 #[polars_expr(output_type=UInt64)]
 fn local_ij_to_cell(inputs: &[Series]) -> PolarsResult<Series> {
-    let origin_series = &inputs[0];
-    let i_series = &inputs[1];
-    let j_series = &inputs[2];
-    crate::engine::traversal::local_ij_to_cell(origin_series, i_series, j_series)
+    let b = crate::engine::utils::broadcast_inputs(&[&inputs[0], &inputs[1], &inputs[2]])?;
+    crate::engine::traversal::local_ij_to_cell(&b[0], &b[1], &b[2])
 }
 
 // ===== Vertexes ===== //
@@ -349,16 +346,14 @@ fn boundary_list_dtype(input_fields: &[Field]) -> PolarsResult<Field> {
 
 #[polars_expr(output_type=Boolean)]
 fn are_neighbor_cells(inputs: &[Series]) -> PolarsResult<Series> {
-    let origin_series = &inputs[0];
-    let destination_series = &inputs[1];
-    crate::engine::edge::are_neighbor_cells(origin_series, destination_series)
+    let b = crate::engine::utils::broadcast_inputs(&[&inputs[0], &inputs[1]])?;
+    crate::engine::edge::are_neighbor_cells(&b[0], &b[1])
 }
 
 #[polars_expr(output_type=UInt64)]
 fn cells_to_directed_edge(inputs: &[Series]) -> PolarsResult<Series> {
-    let origin_series = &inputs[0];
-    let destination_series = &inputs[1];
-    crate::engine::edge::cells_to_directed_edge(origin_series, destination_series)
+    let b = crate::engine::utils::broadcast_inputs(&[&inputs[0], &inputs[1]])?;
+    crate::engine::edge::cells_to_directed_edge(&b[0], &b[1])
 }
 
 #[polars_expr(output_type=Boolean)]
